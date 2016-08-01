@@ -33,9 +33,17 @@ public:
     void register_logger(std::shared_ptr<logger> logger)
     {
         std::lock_guard<Mutex> lock(_mutex);
-        auto logger_name = logger->name();
-        throw_if_exists(logger_name);
-        _loggers[logger_name] = logger;
+        std::string logger_name = logger->name();
+
+		auto found = _loggers.find(logger_name);
+		if (found != _loggers.end())
+        {
+        	if ((found->second) == nullptr)
+        	{
+        		_loggers.erase(logger_name);
+				_loggers[logger_name] = logger;
+        	}
+        }
     }
 
 
@@ -142,8 +150,18 @@ private:
 
     void throw_if_exists(const std::string &logger_name)
     {
-        if (_loggers.find(logger_name) != _loggers.end())
-            throw spdlog_ex("logger with name '" + logger_name + "' already exists");
+    	auto found = _loggers.find(logger_name);
+        if (found != _loggers.end())
+        {
+        	if ((found->second) == nullptr)
+        	{
+        		_loggers.erase(logger_name);
+        	}
+			else
+			{
+				throw spdlog_ex("logger with name '" + logger_name + "' already exists");
+			}
+        }
     }
     Mutex _mutex;
     std::unordered_map <std::string, std::shared_ptr<logger>> _loggers;
